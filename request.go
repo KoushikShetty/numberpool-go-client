@@ -9,7 +9,7 @@ import (
 // CreateRequest represents the Request object that the numberpool works with
 type CreateRequest struct {
 	Name          string         `json:"name"`
-	ApplicationID *string        `json:"application_id"`
+	ApplicationID string         `json:"application_id"`
 	Callback      *Callback      `json:"callback"`
 	Composition   []*Composition `json:"composition"`
 }
@@ -23,31 +23,25 @@ func (c *CreateRequest) Marshal() (io.Reader, error) {
 	return bytes.NewReader(data), nil
 }
 
+// NewCreateRequest - creates the request for numberpool creation
+func NewCreateRequest(name, appID string, cb *Callback, composition []*Composition) *CreateRequest {
+	return &CreateRequest{
+		Name:          name,
+		ApplicationID: appID,
+		Callback:      cb,
+		Composition:   composition,
+	}
+}
+
 // Callback is the uri that is used to send the process completion information.
 type Callback struct {
 	URL    string `json:"url"`
 	Method string `json:"method"`
 }
 
+// NewCallback - ctor
 func NewCallback(url, method string) *Callback {
 	return &Callback{
 		url, method,
 	}
-}
-
-// Composition represents how the pool is composed of based on country, area, type etc..
-type Composition struct {
-	Count    int      `json:"number_count"`
-	Criteria Criteria `json:"criteria"`
-}
-
-// NewComposition creates a new composition object
-func NewComposition(count int, criteria Criteria) *Composition {
-	return &Composition{count, criteria}
-}
-
-type Criteria struct {
-	CountryISO string   `json:"country_iso"`
-	Type       string   `json:"type"`
-	Pattern    []string `json:"pattern"`
 }

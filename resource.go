@@ -19,7 +19,34 @@ type Resource struct {
 	Composition            []Composition `json:"composition"`
 }
 
-func (cr *Resource) Load(data *http.Response) perror.PlivoError {
+// Composition represents how the pool is composed of based on country, area, type etc..
+type Composition struct {
+	Count    int       `json:"number_count"`
+	Criteria *Criteria `json:"criteria"`
+}
+
+// NewComposition creates a new composition object
+func NewComposition(count int, criteria *Criteria) *Composition {
+	return &Composition{count, criteria}
+}
+
+// Criteria - criteria object
+type Criteria struct {
+	CountryISO string   `json:"country_iso"`
+	Type       string   `json:"type"`
+	Pattern    []string `json:"pattern"`
+}
+
+// NewCiteria - ctor
+func NewCiteria(countryISO, numType string, pattern []string) *Criteria {
+	return &Criteria{
+		CountryISO: countryISO,
+		Type:       numType,
+		Pattern:    pattern,
+	}
+}
+
+func (cr *Resource) load(data *http.Response) perror.PlivoError {
 	defer data.Body.Close()
 	switch data.StatusCode {
 	case http.StatusOK:
@@ -35,29 +62,32 @@ func (cr *Resource) Load(data *http.Response) perror.PlivoError {
 	return nil
 }
 
+// ListResource - Holds the list of numberpool resources
 type ListResource struct {
 	Pools []Resource `json:"pools"`
-	Meta  `json:"meta"`
+	Meta  meta       `json:"meta"`
 }
 
-type Meta struct {
+// meta - represents the meta information for the lsit resource
+type meta struct {
 	Limit    string `json:"limit"`
-	offset   string `json:"offset"`
+	Offset   string `json:"offset"`
 	Total    int    `json:"total_count"`
 	Next     string `json:"next"`
 	Previous string `json:"previous"`
 }
 
-func (cr *ListResource) Load(data *http.Response) perror.PlivoError {
+// Load - loads the list resource
+func (cr *ListResource) load(data *http.Response) perror.PlivoError {
 	defer data.Body.Close()
 	switch data.StatusCode {
 	case http.StatusOK:
 		if err := json.NewDecoder(data.Body).Decode(cr); err != nil {
-			poolErr := *PoolResourceLoadError
+			poolErr := *PoolListResourceLoadError
 			return poolErr.SetDescription(err.Error()).SetInternalData(err)
 		}
 	default:
-		res := *PoolResourceLoadError
+		res := *PoolListResourceLoadError
 		return res.SetDescription("Invalid status code from service")
 
 	}

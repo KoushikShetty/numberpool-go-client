@@ -78,12 +78,7 @@ func (nc *NumberpoolClient) Create(req *CreateRequest) (*CreateResponse, perror.
 	}
 
 	response := &CreateResponse{}
-	if err = response.Load(resp); err != nil {
-		poolErr := *PoolCreateResponseLoadError
-		return nil, poolErr.SetDescription(err.Error()).SetInternalData(err)
-	}
-
-	return response, nil
+	return response, response.load(resp)
 }
 
 // Get - fetch the numberpool associated with the specified id
@@ -100,7 +95,7 @@ func (nc *NumberpoolClient) Get(id string) (*Resource, perror.PlivoError) {
 	}
 
 	response := &Resource{}
-	return response, response.Load(resp)
+	return response, response.load(resp)
 }
 
 // GetAll - fetchs all the numberpool associated with the account_id
@@ -113,7 +108,7 @@ func (nc *NumberpoolClient) GetAll(subAccount string, limit, offset int) (*ListR
 	}
 
 	response := &ListResource{}
-	return response, response.Load(resp)
+	return response, response.load(resp)
 }
 
 // GetAll - fetchs all the numberpool associated with the account_id

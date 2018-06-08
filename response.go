@@ -13,7 +13,8 @@ type CreateResponse struct {
 	Status string
 }
 
-func (cr *CreateResponse) Load(data *http.Response) perror.PlivoError {
+// Load - loads the creation response
+func (cr *CreateResponse) load(data *http.Response) perror.PlivoError {
 	defer data.Body.Close()
 	switch data.StatusCode {
 	case http.StatusProcessing:
@@ -24,7 +25,7 @@ func (cr *CreateResponse) Load(data *http.Response) perror.PlivoError {
 			return poolErr.SetDescription(err.Error()).SetInternalData(err)
 		}
 	default:
-		res := *PoolCreateResponseError
+		res := *PoolCreateResponseLoadError
 		return res.SetDescription("Invalid status code from service")
 
 	}
