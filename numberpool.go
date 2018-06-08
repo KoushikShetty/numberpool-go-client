@@ -25,6 +25,7 @@ type Numberpool interface {
 	Create(req *CreateRequest) (*CreateResponse, perror.PlivoError)
 	Get(id string) (*Resource, perror.PlivoError)
 	GetAll(subAccount string, limit, offset int) (*ListResource, perror.PlivoError)
+	Delete(id string) perror.PlivoError
 }
 
 // NumberpoolClient - Client for the numberpool resource
@@ -87,6 +88,10 @@ func (nc *NumberpoolClient) Create(req *CreateRequest) (*CreateResponse, perror.
 
 // Get - fetch the numberpool associated with the specified id
 func (nc *NumberpoolClient) Get(id string) (*Resource, perror.PlivoError) {
+	if id == "" {
+		return nil, perror.ErrBadRequestInvalidParameter
+	}
+
 	path := fmt.Sprintf(PathGetPool, nc.host, id)
 	resp, err := nc.sendRequest(path, "GET", nil)
 	if err != nil {
@@ -111,6 +116,23 @@ func (nc *NumberpoolClient) GetAll(subAccount string, limit, offset int) (*ListR
 	return response, response.Load(resp)
 }
 
+// GetAll - fetchs all the numberpool associated with the account_id
+func (nc *NumberpoolClient) Delete(id string) perror.PlivoError {
+	if id == "" {
+		return perror.ErrBadRequestInvalidParameter
+	}
+
+	path := fmt.Sprintf(PathPoolDelete, nc.host, id)
+	resp, err := nc.sendRequest(path, "DELETE", nil)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		poolError := *PoolDeleteError
+		return poolError.SetDescription(err.Error()).SetInternalData(err)
+	}
+
+	return nil
+}
+
+// Internal function to send the request to the client
 func (nc *NumberpoolClient) sendRequest(url, method string, data io.Reader) (*http.Response, error) {
 	// Create the context for the request
 	c, cancelFn := context.WithTimeout(context.Background(), time.Duration(nc.timeout)*time.Millisecond)

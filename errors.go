@@ -13,4 +13,5 @@ var (
 	PoolResourceLoadError         = perror.New(6, "Error while loading numberpool resource", nil)
 	PoolListResourceFetchError    = perror.New(7, "Error while fetching numberpool list resource", nil)
 	PoolListResourceLoadError     = perror.New(8, "Error while loading numberpool listresource", nil)
+	PoolDeleteError               = perror.New(9, "Error while deleting numberpool resource", nil)
 )
