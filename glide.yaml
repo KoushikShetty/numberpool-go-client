@@ -1,0 +1,4 @@
+package: github.com/plivo/numberpool-go-client
+import:
+- package: github.com/plivo/Commonlib
+  version: ^0.3.0
