@@ -2,6 +2,7 @@ package numberpool
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -10,28 +11,104 @@ import (
 	perror "github.com/plivo/Commonlib/go/error"
 )
 
+// Paths for the endpoints
+const (
+	PathPoolCreation = "%s/number_pool"
+	PathPoolUpdate   = "%s/number_pool/%s"
+	PathPoolDelete   = "%s/number_pool/%s"
+	PathGetPool      = "%s/number_pool/%s"
+	PathGetAllPool   = "%s/number_pool"
+)
+
 // NumberpoolClient - Client that will be used to interface with the Numberpool service
 type Numberpool interface {
-	Create(ctx context.Context, req *CreateRequest) (*CreateResponse, perror.PlivoError)
-	Get(ctx context.Context, id string) (*Resource, perror.PlivoError)
-	GetAll(ctx context.Context, subAccount string, limit, offset int) (*NumberpoolClient, perror.PlivoError)
+	Create(req *CreateRequest) (*CreateResponse, perror.PlivoError)
+	Get(id string) (*Resource, perror.PlivoError)
+	GetAll(subAccount string, limit, offset int) (*ListResource, perror.PlivoError)
+}
+
+// NumberpoolClient - Client for the numberpool resource
+type NumberpoolClient struct {
+	host    string
+	timeout int
+	authID  string
+	baseURL string
 }
 
 // New - Constructs a NumberPool client
-func New(URL string) (Numberpool, perror.PlivoError) {
-	if URL == "" {
+func New(authID, host string, timeout int) (Numberpool, perror.PlivoError) {
+	if host == "" {
 		return nil, perror.ErrBadRequestInvalidParameter
 	}
-	_, err := url.Parse(URL)
+
+	if authID == "" {
+		return nil, perror.ErrBadRequestInvalidParameter
+	}
+
+	// defaulting to 1000ms
+	if timeout < 1 {
+		timeout = 1000
+	}
+
+	_, err := url.Parse(host)
 	if err != nil {
 		return nil, perror.ErrBadRequestInvalidParameter.SetDescription("")
 	}
-	return &NumberpoolClient{URL}, nil
+	return &NumberpoolClient{
+		host:    host,
+		timeout: timeout,
+		authID:  authID,
+		baseURL: fmt.Sprintf("%s/v1/account/%s", host, authID),
+	}, nil
 }
 
-type NumberpoolClient struct {
-	url     string
-	timeout int
+// Create - Initiates a numberpool creation process, returns the ID of the pool that will be created
+func (nc *NumberpoolClient) Create(req *CreateRequest) (*CreateResponse, perror.PlivoError) {
+	data, err := req.Marshal()
+	if err != nil {
+		return nil, PoolCreateRequestMarshalError
+	}
+
+	path := fmt.Sprintf(PathPoolCreation, nc.baseURL)
+	resp, err := nc.sendRequest(path, "POST", data)
+	if err != nil {
+		poolError := *PoolCreationError
+		return nil, poolError.SetDescription(err.Error()).SetInternalData(err)
+	}
+
+	response := &CreateResponse{}
+	if err = response.Load(resp); err != nil {
+		poolErr := *PoolCreateResponseLoadError
+		return nil, poolErr.SetDescription(err.Error()).SetInternalData(err)
+	}
+
+	return response, nil
+}
+
+// Get - fetch the numberpool associated with the specified id
+func (nc *NumberpoolClient) Get(id string) (*Resource, perror.PlivoError) {
+	path := fmt.Sprintf(PathGetPool, nc.host, id)
+	resp, err := nc.sendRequest(path, "GET", nil)
+	if err != nil {
+		poolError := *PoolResourceFetchError
+		return nil, poolError.SetDescription(err.Error()).SetInternalData(err)
+	}
+
+	response := &Resource{}
+	return response, response.Load(resp)
+}
+
+// GetAll - fetchs all the numberpool associated with the account_id
+func (nc *NumberpoolClient) GetAll(subAccount string, limit, offset int) (*ListResource, perror.PlivoError) {
+	path := fmt.Sprintf(PathGetAllPool, nc.host)
+	resp, err := nc.sendRequest(path, "GET", nil)
+	if err != nil {
+		poolError := *PoolListResourceFetchError
+		return nil, poolError.SetDescription(err.Error()).SetInternalData(err)
+	}
+
+	response := &ListResource{}
+	return response, response.Load(resp)
 }
 
 func (nc *NumberpoolClient) sendRequest(url, method string, data io.Reader) (*http.Response, error) {
@@ -46,50 +123,4 @@ func (nc *NumberpoolClient) sendRequest(url, method string, data io.Reader) (*ht
 	req.WithContext(c)
 	client := http.Client{}
 	return client.Do(req)
-}
-
-// Create - Initiates a numberpool creation process, returns the ID of the pool that will be created
-func (nc *NumberpoolClient) Create(req *CreateRequest) (*CreateResponse, perror.PlivoError) {
-
-	data, err := req.Marshal()
-	if err != nil {
-		return nil, PoolCreateRequestMarshalError
-	}
-
-	resp, err := nc.sendRequest(nc.url, "POST", data)
-	if err != nil {
-		poolError := *PoolCreationError
-		return nil, poolError.SetDescription(err.Error()).SetInternalData(err)
-	}
-
-	response := &CreateResponse{}
-	if err = response.Load(resp); err != nil {
-		poolErr := *PoolCreateResponseLoadError
-		return nil, poolErr.SetDescription(err.Error()).SetInternalData(err)
-	}
-
-	return response, nil
-}
-
-// Get - Initiates a numberpool creation process, returns the ID of the pool that will be created
-func (nc *NumberpoolClient) Create(req *CreateRequest) (*CreateResponse, perror.PlivoError) {
-
-	data, err := req.Marshal()
-	if err != nil {
-		return nil, PoolCreateRequestMarshalError
-	}
-
-	resp, err := nc.sendRequest(nc.url, "POST", data)
-	if err != nil {
-		poolError := *PoolCreationError
-		return nil, poolError.SetDescription(err.Error()).SetInternalData(err)
-	}
-
-	response := &CreateResponse{}
-	if err = response.Load(resp); err != nil {
-		poolErr := *PoolCreateResponseLoadError
-		return nil, poolErr.SetDescription(err.Error()).SetInternalData(err)
-	}
-
-	return response, nil
 }

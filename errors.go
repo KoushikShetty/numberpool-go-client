@@ -5,7 +5,12 @@ import (
 )
 
 var (
-	PoolCreateRequestMarshalError = perror.New(0, "Error while marshalling request", nil)
-	PoolCreationError             = p.New(1, "Error creating pool", nil)
-	PoolCreateResponseLoadError   = perror.New(2, "Error while loading response", nil)
+	PoolCreateRequestMarshalError = perror.New(1, "Error while marshalling request", nil)
+	PoolCreationError             = perror.New(2, "Error creating pool", nil)
+	PoolCreateResponseError       = perror.New(3, "Error response from service", nil)
+	PoolCreateResponseLoadError   = perror.New(4, "Error while loading response", nil)
+	PoolResourceFetchError        = perror.New(5, "Error while fetching numberpool resource", nil)
+	PoolResourceLoadError         = perror.New(6, "Error while loading numberpool resource", nil)
+	PoolListResourceFetchError    = perror.New(7, "Error while fetching numberpool list resource", nil)
+	PoolListResourceLoadError     = perror.New(8, "Error while loading numberpool listresource", nil)
 )
